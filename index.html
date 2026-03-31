@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Compiler Error Explanation System | 24CSB0B42</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --card: #161f32;
+    --border: #1e2d4a;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --accent3: #8b5cf6;
+    --green: #10b981;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── Grid BG ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: rgba(10,14,26,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  }
+
+  .hero-badge {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.35rem 1rem;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .hero-buttons {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1.75rem;
+    border-radius: 3px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+  }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.35); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  /* ── TERMINAL DEMO ── */
+  .terminal-wrap {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 680px;
+    margin: 3rem auto 0;
+    animation: fadeUp 0.6s ease 0.4s both;
+  }
+
+  .terminal {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+
+  .terminal-bar {
+    background: #161b22;
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-left: auto; margin-right: auto;
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 2;
+  }
+
+  .t-comment { color: #6b7280; }
+  .t-prompt { color: var(--accent2); }
+  .t-error { color: #f87171; }
+  .t-arrow { color: var(--accent3); }
+  .t-output { color: var(--green); }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 1.1em;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── SECTIONS ── */
+  section { position: relative; z-index: 1; padding: 5rem 2rem; }
+
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.8;
+    margin-bottom: 3rem;
+  }
+
+  /* ── CARDS ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.75rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+
+  .card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .card p {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── FILES TABLE ── */
+  .files-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+  }
+
+  .files-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .files-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .files-table tr:hover td { background: rgba(59,130,246,0.05); }
+
+  .file-name {
+    color: var(--accent2);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .file-role { color: var(--text); }
+  .file-desc { color: var(--muted); font-size: 0.75rem; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .tag-core { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .tag-model { background: rgba(139,92,246,0.15); color: var(--accent3); }
+  .tag-gui { background: rgba(16,185,129,0.15); color: var(--green); }
+  .tag-entry { background: rgba(6,182,212,0.15); color: var(--accent2); }
+
+  /* ── FLOW ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 520px;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .flow-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .flow-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .flow-connector {
+    width: 2px; height: 32px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    opacity: 0.4;
+  }
+
+  .flow-content {
+    padding-top: 0.4rem;
+    padding-bottom: 2rem;
+  }
+
+  .flow-content h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+  }
+
+  .flow-content p {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── INSTALL ── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+
+  .code-block-header {
+    padding: 0.6rem 1rem;
+    background: #161b22;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .code-block pre {
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .code-block pre .cmd { color: var(--accent2); }
+  .code-block pre .cmt { color: #4b5563; }
+
+  /* ── ERRORS TABLE ── */
+  .errors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .error-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    border-top: 3px solid;
+  }
+
+  .error-card:nth-child(1) { border-top-color: #f87171; }
+  .error-card:nth-child(2) { border-top-color: #fbbf24; }
+  .error-card:nth-child(3) { border-top-color: var(--accent2); }
+  .error-card:nth-child(4) { border-top-color: var(--accent3); }
+
+  .error-type {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .error-card:nth-child(1) .error-type { color: #f87171; }
+  .error-card:nth-child(2) .error-type { color: #fbbf24; }
+  .error-card:nth-child(3) .error-type { color: var(--accent2); }
+  .error-card:nth-child(4) .error-type { color: var(--accent3); }
+
+  .error-card p {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 2;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav { padding: 1rem; }
+    .nav-links { display: none; }
+    .hero { padding: 5rem 1.25rem 3rem; }
+    section { padding: 3.5rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">// 24CSB0B42</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#files">Files</a>
+    <a href="#flow">Flow</a>
+    <a href="#run">Run</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">🎓 Compiler Design Project &nbsp;·&nbsp; 24CSB0B42</div>
+  <h1>Compiler Error<br/><span>Explanation System</span></h1>
+  <p class="hero-sub">Transforms cryptic Python runtime errors into beginner-friendly explanations using AST analysis and rule-based NLG templates.</p>
+  <div class="hero-buttons">
+    <a href="https://github.com/mv24csb0b42/Compiler-Error-Explanation-Enhancer" target="_blank" class="btn btn-primary">
+      ⭐ View on GitHub
+    </a>
+    <a href="https://github.com/mv24csb0b42/Compiler-Error-Explanation-Enhancer/archive/refs/heads/main.zip" class="btn btn-outline">
+      ⬇ Download ZIP
+    </a>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="terminal-wrap">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div class="terminal-title">python main.py</div>
+      </div>
+      <div class="terminal-body">
+        <div class="t-comment"># Running the error explanation engine...</div>
+        <br/>
+        <div><span class="t-prompt">$</span> python main.py</div>
+        <br/>
+        <div class="t-error">--- Compiler Error ---</div>
+        <div class="t-error">NameError: name 'z' is not defined</div>
+        <br/>
+        <div class="t-arrow">--- Generated Explanation ---</div>
+        <div class="t-output">The variable 'z' is used before it is defined on line 3.</div>
+        <div class="t-output">You need to assign a value to 'z' before using it.</div>
+        <br/>
+        <div><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="section-label">// Overview</div>
+    <h2 class="section-title reveal">What This Project Does</h2>
+    <p class="section-desc reveal">Standard compiler errors are short and technical. This system converts them into human-readable explanations suitable for students and beginners.</p>
+
+    <div class="cards">
+      <div class="card reveal">
+        <div class="card-icon">🌳</div>
+        <h3>AST Analysis</h3>
+        <p>Uses Python's built-in <code>ast</code> module to analyze code structure and trace variable usage, answering <em>"What is happening in the program?"</em></p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">💬</div>
+        <h3>NLG Templates</h3>
+        <p>Rule-based Natural Language Generation converts structured error context into grammatically correct English explanations for beginners.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">🖥️</div>
+        <h3>Tkinter GUI</h3>
+        <p>A 700×500 desktop interface lets users paste code, click Analyze, and instantly see beginner-friendly explanations — no terminal needed.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">🔍</div>
+        <h3>Regex Extraction</h3>
+        <p>Extracts variable names and line numbers dynamically from live exceptions using regular expressions and the <code>traceback</code> module.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FILES -->
+<section id="files">
+  <div class="section-inner">
+    <div class="section-label">// Source Files</div>
+    <h2 class="section-title reveal">Project Structure</h2>
+    <p class="section-desc reveal">Every file in the repository and its role in the system.</p>
+
+    <div class="reveal" style="overflow-x:auto; border:1px solid var(--border); border-radius:6px;">
+      <table class="files-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Role</th>
+            <th>Tag</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="file-name">main.py</td>
+            <td class="file-role">Entry Point</td>
+            <td><span class="tag tag-entry">CLI</span></td>
+            <td class="file-desc">Runs the CLI demo with a hardcoded NameError sample. Calls generate_explanation() and prints the result.</td>
+          </tr>
+          <tr>
+            <td class="file-name">explanation_model.py</td>
+            <td class="file-role">Core Logic</td>
+            <td><span class="tag tag-core">Core</span></td>
+            <td class="file-desc">Contains generate_explanation() and explain_error(). Routes errors to the correct NLG template. Extracts variable names via regex and line numbers via traceback.</td>
+          </tr>
+          <tr>
+            <td class="file-name">gui_app.py</td>
+            <td class="file-role">GUI Interface</td>
+            <td><span class="tag tag-gui">GUI</span></td>
+            <td class="file-desc">Tkinter 700×500 window. User pastes code → clicks Analyze → explanation appears. Uses exec() to run code and catch exceptions.</td>
+          </tr>
+          <tr>
+            <td class="file-name">models/templates.py</td>
+            <td class="file-role">NLG Templates</td>
+            <td><span class="tag tag-model">NLG</span></td>
+            <td class="file-desc">Defines 4 string templates: NAME_ERROR_TEMPLATE, SYNTAX_ERROR_TEMPLATE, TYPE_ERROR_TEMPLATE, GENERIC_ERROR_TEMPLATE.</td>
+          </tr>
+          <tr>
+            <td class="file-name">models/__init__.py</td>
+            <td class="file-role">Package Init</td>
+            <td><span class="tag tag-model">PKG</span></td>
+            <td class="file-desc">Makes the models/ directory a Python package so templates.py can be imported via models.templates.</td>
+          </tr>
+          <tr>
+            <td class="file-name">README.md</td>
+            <td class="file-role">Documentation</td>
+            <td><span class="tag tag-entry">DOCS</span></td>
+            <td class="file-desc">Full project overview, viva notes, flow diagram, key concepts, and future improvements.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FLOW -->
+<section id="flow">
+  <div class="section-inner" style="display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:start;">
+    <div>
+      <div class="section-label">// Pipeline</div>
+      <h2 class="section-title reveal">System Execution Flow</h2>
+      <p class="section-desc reveal">How a Python exception becomes a human-friendly explanation in 8 steps.</p>
+
+      <div class="flow reveal">
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">01</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>User Submits Code</h4><p>Via CLI sample or the Tkinter GUI input box.</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">02</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>Exception Raised</h4><p>Python runtime raises an Exception during exec().</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">03</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>Exception Caught</h4><p>try/except block captures the live error object.</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">04</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>Context Extracted</h4><p>explain_error() uses regex + traceback to get type, variable, line.</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">05</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>AST Dictionary Built</h4><p>{error_type, variable, line} structured context formed.</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">06</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>Template Selected</h4><p>generate_explanation() matches error type to the right NLG template.</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">07</div><div class="flow-connector"></div></div>
+          <div class="flow-content"><h4>Template Formatted</h4><p>Context values injected into template using .format().</p></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot" style="border-color:var(--green);color:var(--green);">✓</div></div>
+          <div class="flow-content"><h4>Explanation Shown</h4><p>Beginner-friendly text printed to console or displayed in GUI.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supported Errors -->
+    <div>
+      <div class="section-label">// Error Types</div>
+      <h2 class="section-title reveal">Supported Errors</h2>
+      <p class="section-desc reveal">Four error categories are handled with tailored explanations.</p>
+
+      <div class="errors-grid reveal">
+        <div class="error-card">
+          <div class="error-type">NameError</div>
+          <p>Identifies the undefined variable by name, reports the line number, and tells the user to assign a value before use.</p>
+        </div>
+        <div class="error-card">
+          <div class="error-type">SyntaxError</div>
+          <p>Reports the line with the syntax issue and guides the user to check for missing symbols or incorrect formatting.</p>
+        </div>
+        <div class="error-card">
+          <div class="error-type">TypeError</div>
+          <p>Identifies the line where a type mismatch occurred and explains that incompatible data types were used together.</p>
+        </div>
+        <div class="error-card">
+          <div class="error-type">Generic</div>
+          <p>Fallback template for all other exception types. Reports the line and directs the user to review nearby code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- RUN -->
+<section id="run">
+  <div class="section-inner" style="max-width:680px;">
+    <div class="section-label">// Getting Started</div>
+    <h2 class="section-title reveal">How to Run</h2>
+    <p class="section-desc reveal">Clone the repo, activate the virtual environment, and run in CLI or GUI mode.</p>
+
+    <div class="reveal">
+      <div class="code-block">
+        <div class="code-block-header"><span>Step 1 — Clone the repository</span></div>
+        <pre><span class="cmd">git clone</span> https://github.com/mv24csb0b42/Compiler-Error-Explanation-Enhancer.git
+<span class="cmd">cd</span> Compiler-Error-Explanation-Enhancer</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header"><span>Step 2 — Activate virtual environment</span></div>
+        <pre><span class="cmt"># Windows</span>
+venv\Scripts\activate
+
+<span class="cmt"># macOS / Linux</span>
+source venv/bin/activate</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header"><span>Step 3A — Run CLI mode</span></div>
+        <pre><span class="cmd">python</span> main.py</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header"><span>Step 3B — Run GUI mode</span></div>
+        <pre><span class="cmd">python</span> gui_app.py</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <strong style="color:var(--text)">Compiler Error Explanation System</strong> &nbsp;·&nbsp; Compiler Design Subject Project<br/>
+    Student: <strong style="color:var(--text)">M. Venkat Koushik</strong> &nbsp;·&nbsp; Roll No: <strong style="color:var(--accent)">24CSB0B42</strong> &nbsp;·&nbsp; Academic Year: 2024–25<br/><br/>
+    <a href="https://github.com/mv24csb0b42/Compiler-Error-Explanation-Enhancer" target="_blank">GitHub Repository</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/mv24csb0b42/Compiler-Error-Explanation-Enhancer/archive/refs/heads/main.zip">Download ZIP</a>
+  </p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
